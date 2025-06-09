@@ -285,6 +285,34 @@
     }
 }
 
+/* Adjust header title positioning to avoid sidebar button overlap */
+.header h1 {
+    font-size: 1.75rem;
+    font-weight: 700;
+    background: var(--primary-gradient);
+    background-clip: text;
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    letter-spacing: -0.025em;
+    position: relative;
+    z-index: 1;
+    margin-left: 4rem; /* Add margin to avoid sidebar button */
+}
+
+@media (max-width: 768px) {
+    .header h1 {
+        margin-left: 3.5rem;
+        font-size: 1.5rem;
+    }
+}
+
+@media (max-width: 480px) {
+    .header h1 {
+        margin-left: 3rem;
+        font-size: 1.3rem;
+    }
+}
+
 @media (max-width: 480px) {
     .sidebar {
         width: 260px;
