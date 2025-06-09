@@ -6,6 +6,7 @@ const CONFIG = {
     RANGES: {
         INPUT: 'Sheet1!A1',
         OUTPUT: 'Sheet1!D1',
+        TEXTOUTPUT: 'Sheet1!B1',
         USER_ID: 'Sheet1!C1',
         RESPONSE_USER_ID: 'Sheet1!E1'
     },
