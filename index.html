@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Chat Interface</title>
+    <link rel="stylesheet" href="css/variables.css">
+    <link rel="stylesheet" href="css/layout.css">
+    <link rel="stylesheet" href="css/messages.css">
+    <link rel="stylesheet" href="css/components.css">
+</head>
+<body>
+    <div class="header">
+        <h1>AI Chat Interface</h1>
+        <button class="theme-toggle" onclick="toggleTheme()">
+            <span id="theme-icon">🌙</span> Dark Mode
+        </button>
+    </div>
+
+    <div id="status" class="status-indicator connecting">
+        Connecting to Google Sheets...
+    </div>
+
+    <div class="chat-container">
+        <div class="chat-messages" id="chatMessages">
+            <div class="message ai">
+                <div class="message-avatar">AI</div>
+                <div class="message-content">
+                    Hello! I'm your AI assistant. Send me a message and I'll respond through Google Sheets integration. I can format text with <strong>**bold**</strong>, <em>*italic*</em>, <code>`code`</code>, lists, and more!
+                </div>
+            </div>
+        </div>
+
+        <div class="input-container">
+            <div class="input-wrapper">
+                <textarea 
+                    class="message-input" 
+                    id="messageInput" 
+                    placeholder="Type your message here..."
+                    rows="1"
+                ></textarea>
+            </div>
+            <button class="send-button" id="sendButton" onclick="sendMessage()">
+                Send
+            </button>
+        </div>
+    </div>
+
+    <script src="https://accounts.google.com/gsi/client"></script>
+    <script src="https://apis.google.com/js/api.js"></script>
+    <script src="javascript_scripts/config.js"></script>
+    <script src="javascript_scripts/auth.js"></script>
+    <script src="javascript_scripts/chat.js"></script>
+    <script src="javascript_scripts/messaging.js"></script>
+</body>
+</html>

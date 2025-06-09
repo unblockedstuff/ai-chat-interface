@@ -1,0 +1,56 @@
+/* ==========================================
+   CSS RESET & CUSTOM PROPERTIES
+   Load this first - contains all CSS variables and basic reset
+   ========================================== */
+
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+:root {
+    --primary-gradient: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    --secondary-gradient: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+    --bg-primary: #f8fafc;
+    --bg-secondary: rgba(255, 255, 255, 0.8);
+    --bg-glass: rgba(255, 255, 255, 0.25);
+    --bg-glass-hover: rgba(255, 255, 255, 0.35);
+    --bg-chat: linear-gradient(135deg, #f1f5f9 0%, #e2e8f0 100%);
+    --text-primary: #1e293b;
+    --text-secondary: #64748b;
+    --text-muted: #94a3b8;
+    --border-color: rgba(255, 255, 255, 0.2);
+    --border-solid: #e2e8f0;
+    --user-msg-bg: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);
+    --user-msg-text: #ffffff;
+    --ai-msg-bg: rgba(255, 255, 255, 0.7);
+    --ai-msg-text: #1e293b;
+    --input-bg: rgba(255, 255, 255, 0.9);
+    --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+    --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+    --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+    --shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+    --shadow-glass: 0 8px 32px 0 rgba(31, 38, 135, 0.37);
+    --button-hover: linear-gradient(135deg, #2563eb 0%, #1e40af 100%);
+    --backdrop-blur: blur(16px);
+}
+
+[data-theme="dark"] {
+    --bg-primary: #0f172a;
+    --bg-secondary: rgba(15, 23, 42, 0.8);
+    --bg-glass: rgba(15, 23, 42, 0.4);
+    --bg-glass-hover: rgba(15, 23, 42, 0.6);
+    --bg-chat: linear-gradient(135deg, #1e293b 0%, #334155 100%);
+    --text-primary: #f1f5f9;
+    --text-secondary: #cbd5e1;
+    --text-muted: #64748b;
+    --border-color: rgba(255, 255, 255, 0.1);
+    --border-solid: #334155;
+    --user-msg-bg: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);
+    --user-msg-text: #ffffff;
+    --ai-msg-bg: rgba(30, 41, 59, 0.8);
+    --ai-msg-text: #f1f5f9;
+    --input-bg: rgba(30, 41, 59, 0.9);
+    --shadow-glass: 0 8px 32px 0 rgba(0, 0, 0, 0.5);
+}
