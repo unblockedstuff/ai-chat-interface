@@ -80,38 +80,43 @@ async function checkForResponse() {
     if (!AppState.isWaitingForResponse || !AppState.isAuthenticated || !AppState.accessToken) return;
 
     try {
-        // Get both the response (D1) and response user ID (E1)
+        // Get the response text from B1, status from D1, and response user ID from E1
         const result = await gapi.client.sheets.spreadsheets.values.get({
             spreadsheetId: CONFIG.SPREADSHEET_ID,
-            range: 'Sheet1!D1:E1'
+            range: 'Sheet1!B1:E1'
         });
 
         const values = result.result.values;
         if (!values || !values[0]) return;
 
-        const currentResponseValue = values[0][0] ? values[0][0].trim() : '';
-        const responseUserId = values[0][1] ? values[0][1].trim() : '';
+        // B1 = actual response text, D1 = status/trigger, E1 = response user ID
+        const responseText = values[0][0] ? values[0][0].trim() : '';  // B1
+        const statusValue = values[0][2] ? values[0][2].trim() : '';   // D1
+        const responseUserId = values[0][3] ? values[0][3].trim() : ''; // E1
         
         console.log('Checking response:', {
-            currentResponseValue,
+            responseText,
+            statusValue,
             responseUserId,
             currentUserId: AppState.userId,
             lastResponseValue: AppState.lastResponseValue
         });
         
         // Check if we have a new response AND it's for the current user
-        if (currentResponseValue && 
-            currentResponseValue !== AppState.lastResponseValue && 
-            responseUserId === AppState.userId) {
+        // Use the status value (D1) to detect changes, but display the response text (B1)
+        if (statusValue && 
+            statusValue !== AppState.lastResponseValue && 
+            responseUserId === AppState.userId &&
+            responseText) {
             
             console.log('New response received for current user!');
-            AppState.lastResponseValue = currentResponseValue;
+            AppState.lastResponseValue = statusValue; // Track the status change
             hideTypingIndicator();
-            addMessage(currentResponseValue, 'ai');
+            addMessage(responseText, 'ai'); // Display the actual response text
             
             DOM.sendButton.disabled = false;
             AppState.isWaitingForResponse = false;
-        } else if (currentResponseValue && currentResponseValue !== AppState.lastResponseValue) {
+        } else if (statusValue && statusValue !== AppState.lastResponseValue) {
             // Response exists but not for this user - log for debugging
             console.log('Response found but not for current user:', {
                 responseUserId,
