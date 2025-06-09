@@ -5,13 +5,14 @@
 
 // Sidebar state management
 let sidebarOpen = false;
-let selectedModel = 'Item 1'; // Default selection
+let selectedModel = 'gemini-2.5-flash-preview-05-20'; // Default selection
 
 // Initialize sidebar functionality when DOM is loaded
 document.addEventListener('DOMContentLoaded', function() {
     initializeSidebar();
     initializeDropdowns();
     handleResponsiveResize();
+    updateTitle(); // Initialize title
 });
 
 // Initialize sidebar toggle functionality
@@ -149,11 +150,22 @@ function selectModel(modelName, dropdown) {
         }
     });
     
+    // Update page title
+    updateTitle();
+    
     // Optional: Trigger model change event
     console.log('Model selected:', modelName);
     
     // You can add your model switching logic here
     // onModelChange(modelName);
+}
+
+// Update page title based on selected model
+function updateTitle() {
+    const titleElement = document.querySelector('.header h1');
+    if (titleElement) {
+        titleElement.textContent = `AI - ${selectedModel}`;
+    }
 }
 
 // Close all dropdowns
@@ -201,11 +213,18 @@ function setSelectedModel(modelName) {
     }
 }
 
+// Update title when model changes externally
+function updateModelAndTitle(modelName) {
+    setSelectedModel(modelName);
+    updateTitle();
+}
+
 // Export functions for external use
 window.sidebarAPI = {
     toggle: toggleSidebar,
     open: openSidebar,
     close: closeSidebar,
     getSelectedModel: getSelectedModel,
-    setSelectedModel: setSelectedModel
+    setSelectedModel: setSelectedModel,
+    updateModelAndTitle: updateModelAndTitle
 };
