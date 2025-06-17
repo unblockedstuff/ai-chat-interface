@@ -88,6 +88,10 @@ function handleOAuthRedirect() {
     const state = getHashParameter('state');
     const expiresIn = getHashParameter('expires_in');
     
+    console.log('Checking for OAuth redirect parameters...');
+    console.log('Access token found:', !!accessToken);
+    console.log('Error found:', error);
+    
     if (error) {
         console.error('OAuth error:', error);
         updateStatus('Authentication failed: ' + error, 'error');
@@ -113,6 +117,7 @@ function handleOAuthRedirect() {
         return true;
     }
     
+    console.log('No OAuth redirect parameters found');
     return false;
 }
 
@@ -187,6 +192,7 @@ async function initializeGoogleAPI() {
         }
 
         // If no valid saved auth, start redirect flow
+        console.log('No valid authentication found, starting OAuth flow...');
         updateStatus('Please authorize access to Google Sheets...', 'connecting');
         startRedirectAuth();
         
@@ -259,6 +265,11 @@ async function handleTokenResponse(tokenResponse) {
 async function testConnection() {
     try {
         console.log('Testing connection to spreadsheet...');
+        
+        if (!AppState.accessToken) {
+            console.log('No access token available for connection test');
+            return false;
+        }
         
         // Use gapi.client.request with manual Authorization header
         const result = await gapi.client.request({
