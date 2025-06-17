@@ -1,4 +1,4 @@
-// Authentication and Token Management
+// Authentication and Token Management - Redirect Method
 
 // Utility Functions
 function generateUserId() {
@@ -46,18 +46,86 @@ function clearTokenData() {
     AppState.isAuthenticated = false;
 }
 
-// Token Refresh Function
+// URL Parameters Helper
+function getUrlParameter(name) {
+    const urlParams = new URLSearchParams(window.location.search);
+    return urlParams.get(name);
+}
+
+function getHashParameter(name) {
+    const hash = window.location.hash.substring(1);
+    const params = new URLSearchParams(hash);
+    return params.get(name);
+}
+
+function clearUrlParameters() {
+    // Clear URL parameters without page reload
+    const url = new URL(window.location);
+    url.search = '';
+    url.hash = '';
+    window.history.replaceState({}, document.title, url.pathname);
+}
+
+// Generate OAuth URL
+function generateAuthUrl() {
+    const params = new URLSearchParams({
+        client_id: CONFIG.CLIENT_ID,
+        redirect_uri: window.location.origin + window.location.pathname,
+        response_type: 'token',
+        scope: 'https://www.googleapis.com/auth/spreadsheets',
+        include_granted_scopes: 'true',
+        state: generateUserId() // Use this as the user ID
+    });
+    
+    return `https://accounts.google.com/o/oauth2/v2/auth?${params.toString()}`;
+}
+
+// Handle OAuth Redirect Response
+function handleOAuthRedirect() {
+    // Check for authorization code or access token in URL
+    const accessToken = getHashParameter('access_token');
+    const error = getHashParameter('error');
+    const state = getHashParameter('state');
+    const expiresIn = getHashParameter('expires_in');
+    
+    if (error) {
+        console.error('OAuth error:', error);
+        updateStatus('Authentication failed: ' + error, 'error');
+        showRetryButton();
+        clearUrlParameters();
+        return false;
+    }
+    
+    if (accessToken) {
+        console.log('Access token received from redirect');
+        
+        // Create token response object similar to popup method
+        const tokenResponse = {
+            access_token: accessToken,
+            expires_in: parseInt(expiresIn) || 3600
+        };
+        
+        // Use state as user ID if available, otherwise generate new one
+        AppState.userId = state || generateUserId();
+        
+        handleTokenResponse(tokenResponse);
+        clearUrlParameters();
+        return true;
+    }
+    
+    return false;
+}
+
+// Token Refresh Function - Redirect Method
 async function refreshToken() {
     try {
-        console.log('Attempting to refresh token...');
-        if (AppState.tokenClient) {
-            AppState.tokenClient.requestAccessToken({ 
-                prompt: '',
-                hint: 'select_account'
-            });
-        } else {
-            throw new Error('Token client not available');
-        }
+        console.log('Attempting to refresh token via redirect...');
+        updateStatus('Refreshing authentication...', 'connecting');
+        
+        // For redirect method, we need to redirect to get a new token
+        const authUrl = generateAuthUrl();
+        window.location.href = authUrl;
+        
     } catch (error) {
         console.error('Token refresh failed:', error);
         clearTokenData();
@@ -71,6 +139,12 @@ async function initializeGoogleAPI() {
     try {
         updateStatus('Connecting to Google Sheets...', 'connecting');
         
+        // First check if we're returning from OAuth redirect
+        const redirectHandled = handleOAuthRedirect();
+        if (redirectHandled) {
+            return; // handleTokenResponse will be called from handleOAuthRedirect
+        }
+        
         // Initialize GAPI client first
         await new Promise(resolve => gapi.load('client', resolve));
         await gapi.client.init({
@@ -80,7 +154,7 @@ async function initializeGoogleAPI() {
 
         console.log('GAPI initialized successfully');
 
-        // Check for saved authentication first
+        // Check for saved authentication
         const savedAuth = loadTokenData();
         if (savedAuth) {
             console.log('Found saved authentication, attempting to use it...');
@@ -104,19 +178,9 @@ async function initializeGoogleAPI() {
             }
         }
 
-        // Initialize Google Identity Services
+        // If no valid saved auth, start redirect flow
         updateStatus('Please authorize access to Google Sheets...', 'connecting');
-        
-        AppState.tokenClient = google.accounts.oauth2.initTokenClient({
-            client_id: CONFIG.CLIENT_ID,
-            scope: 'https://www.googleapis.com/auth/spreadsheets',
-            callback: handleTokenResponse,
-        });
-
-        AppState.tokenClient.requestAccessToken({ 
-            prompt: 'consent',
-            hint: 'select_account'
-        });
+        startRedirectAuth();
         
     } catch (error) {
         console.error('Failed to initialize Google API:', error);
@@ -125,7 +189,21 @@ async function initializeGoogleAPI() {
     }
 }
 
-// Token Response Handler
+// Start Redirect Authentication
+function startRedirectAuth() {
+    console.log('Starting redirect authentication...');
+    
+    // Generate the OAuth URL and redirect
+    const authUrl = generateAuthUrl();
+    console.log('Redirecting to:', authUrl);
+    
+    // Add a small delay to show the status message
+    setTimeout(() => {
+        window.location.href = authUrl;
+    }, 1000);
+}
+
+// Token Response Handler (same as popup version)
 function handleTokenResponse(tokenResponse) {
     console.log('Token response received:', tokenResponse);
     
@@ -181,10 +259,8 @@ async function testConnection() {
         
         if (error.status === 401 || error.status === 403) {
             console.log('Auth error during connection test, attempting token refresh...');
-            if (AppState.tokenClient) {
-                await refreshToken();
-                return false;
-            }
+            await refreshToken();
+            return false;
         }
         
         updateStatus(`Connection test failed: ${error.message}`, 'error');
