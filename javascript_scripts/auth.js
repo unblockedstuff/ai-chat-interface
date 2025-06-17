@@ -173,15 +173,6 @@ async function initializeGoogleAPI() {
             AppState.accessToken = savedAuth.accessToken;
             AppState.userId = savedAuth.userId;
             
-            // Ensure gapi.client is available before setting token
-            if (gapi.client && typeof gapi.client.setToken === 'function') {
-                gapi.client.setToken({
-                    access_token: AppState.accessToken
-                });
-            } else {
-                throw new Error('GAPI client not properly initialized');
-            }
-            
             const isValid = await testConnection();
             if (isValid) {
                 AppState.isAuthenticated = true;
@@ -249,26 +240,6 @@ async function handleTokenResponse(tokenResponse) {
         
         saveTokenData(tokenResponse, AppState.userId);
         
-        // Ensure GAPI is properly initialized before setting token
-        if (!gapi.client || typeof gapi.client.setToken !== 'function') {
-            console.log('GAPI client not ready, initializing...');
-            await new Promise((resolve, reject) => {
-                gapi.load('client', {
-                    callback: resolve,
-                    onerror: () => reject(new Error('Failed to load GAPI client'))
-                });
-            });
-            
-            await gapi.client.init({
-                apiKey: CONFIG.API_KEY,
-                discoveryDocs: ['https://sheets.googleapis.com/$discovery/rest?version=v4']
-            });
-        }
-        
-        gapi.client.setToken({
-            access_token: AppState.accessToken
-        });
-        
         console.log('Authentication successful!');
         AppState.isAuthenticated = true;
         updateStatus(`Connected! User ID: ${AppState.userId}`, 'connected');
@@ -288,10 +259,16 @@ async function handleTokenResponse(tokenResponse) {
 async function testConnection() {
     try {
         console.log('Testing connection to spreadsheet...');
-        const result = await gapi.client.sheets.spreadsheets.values.get({
-            spreadsheetId: CONFIG.SPREADSHEET_ID,
-            range: 'Sheet1!A1:E1'
+        
+        // Use gapi.client.request with manual Authorization header
+        const result = await gapi.client.request({
+            path: `https://sheets.googleapis.com/v4/spreadsheets/${CONFIG.SPREADSHEET_ID}/values/Sheet1!A1:E1`,
+            method: 'GET',
+            headers: {
+                'Authorization': `Bearer ${AppState.accessToken}`
+            }
         });
+        
         console.log('Connection test successful:', result);
         return true;
     } catch (error) {
