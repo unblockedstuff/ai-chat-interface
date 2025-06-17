@@ -139,20 +139,32 @@ async function initializeGoogleAPI() {
     try {
         updateStatus('Connecting to Google Sheets...', 'connecting');
         
-        // First check if we're returning from OAuth redirect
-        const redirectHandled = handleOAuthRedirect();
-        if (redirectHandled) {
-            return; // handleTokenResponse will be called from handleOAuthRedirect
-        }
-        
-        // Initialize GAPI client first
-        await new Promise(resolve => gapi.load('client', resolve));
+        // Initialize GAPI client first - this must happen before everything else
+        console.log('Loading GAPI client...');
+        await new Promise((resolve, reject) => {
+            if (typeof gapi === 'undefined') {
+                reject(new Error('Google API library not loaded'));
+                return;
+            }
+            gapi.load('client', {
+                callback: resolve,
+                onerror: () => reject(new Error('Failed to load GAPI client'))
+            });
+        });
+
+        console.log('Initializing GAPI client...');
         await gapi.client.init({
             apiKey: CONFIG.API_KEY,
             discoveryDocs: ['https://sheets.googleapis.com/$discovery/rest?version=v4']
         });
 
         console.log('GAPI initialized successfully');
+
+        // Now check if we're returning from OAuth redirect
+        const redirectHandled = handleOAuthRedirect();
+        if (redirectHandled) {
+            return; // handleTokenResponse will be called from handleOAuthRedirect
+        }
 
         // Check for saved authentication
         const savedAuth = loadTokenData();
@@ -161,9 +173,14 @@ async function initializeGoogleAPI() {
             AppState.accessToken = savedAuth.accessToken;
             AppState.userId = savedAuth.userId;
             
-            gapi.client.setToken({
-                access_token: AppState.accessToken
-            });
+            // Ensure gapi.client is available before setting token
+            if (gapi.client && typeof gapi.client.setToken === 'function') {
+                gapi.client.setToken({
+                    access_token: AppState.accessToken
+                });
+            } else {
+                throw new Error('GAPI client not properly initialized');
+            }
             
             const isValid = await testConnection();
             if (isValid) {
@@ -203,8 +220,8 @@ function startRedirectAuth() {
     }, 1000);
 }
 
-// Token Response Handler (same as popup version)
-function handleTokenResponse(tokenResponse) {
+// Token Response Handler
+async function handleTokenResponse(tokenResponse) {
     console.log('Token response received:', tokenResponse);
     
     if (tokenResponse.error) {
@@ -221,27 +238,50 @@ function handleTokenResponse(tokenResponse) {
         return;
     }
     
-    console.log('Setting access token...');
-    AppState.accessToken = tokenResponse.access_token;
-    
-    if (!AppState.userId) {
-        AppState.userId = generateUserId();
-        console.log('Generated new user ID:', AppState.userId);
+    try {
+        console.log('Setting access token...');
+        AppState.accessToken = tokenResponse.access_token;
+        
+        if (!AppState.userId) {
+            AppState.userId = generateUserId();
+            console.log('Generated new user ID:', AppState.userId);
+        }
+        
+        saveTokenData(tokenResponse, AppState.userId);
+        
+        // Ensure GAPI is properly initialized before setting token
+        if (!gapi.client || typeof gapi.client.setToken !== 'function') {
+            console.log('GAPI client not ready, initializing...');
+            await new Promise((resolve, reject) => {
+                gapi.load('client', {
+                    callback: resolve,
+                    onerror: () => reject(new Error('Failed to load GAPI client'))
+                });
+            });
+            
+            await gapi.client.init({
+                apiKey: CONFIG.API_KEY,
+                discoveryDocs: ['https://sheets.googleapis.com/$discovery/rest?version=v4']
+            });
+        }
+        
+        gapi.client.setToken({
+            access_token: AppState.accessToken
+        });
+        
+        console.log('Authentication successful!');
+        AppState.isAuthenticated = true;
+        updateStatus(`Connected! User ID: ${AppState.userId}`, 'connected');
+        loadAndDisplayChatHistory();
+        startResponsePolling();
+        
+        testConnection();
+        
+    } catch (error) {
+        console.error('Error in handleTokenResponse:', error);
+        updateStatus(`Authentication setup failed: ${error.message}`, 'error');
+        showRetryButton();
     }
-    
-    saveTokenData(tokenResponse, AppState.userId);
-    
-    gapi.client.setToken({
-        access_token: AppState.accessToken
-    });
-    
-    console.log('Authentication successful!');
-    AppState.isAuthenticated = true;
-    updateStatus(`Connected! User ID: ${AppState.userId}`, 'connected');
-    loadAndDisplayChatHistory();
-    startResponsePolling();
-    
-    testConnection();
 }
 
 // Connection Test
